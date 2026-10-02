@@ -1,0 +1,139 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1536" viewBox="0 0 1024 1536">
+  <title>Aryse — Project Ideas, Big Change</title>
+  <desc>Vector artwork for the Aryse Create Project page showing project types and a mountain growth illustration.</desc>
+
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#E9FAF8"/>
+      <stop offset="1" stop-color="#DDF6F2"/>
+    </linearGradient>
+    <linearGradient id="farMountain" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#B9E9E4"/>
+      <stop offset="1" stop-color="#78CEC6"/>
+    </linearGradient>
+    <linearGradient id="midMountain" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#80D3CB"/>
+      <stop offset="1" stop-color="#4DB5AC"/>
+    </linearGradient>
+    <linearGradient id="frontMountain" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#159B92"/>
+      <stop offset="1" stop-color="#45B8AF"/>
+    </linearGradient>
+    <clipPath id="card">
+      <rect x="66" y="45" width="892" height="1446" rx="28"/>
+    </clipPath>
+  </defs>
+
+  <!-- Main panel -->
+  <rect x="66" y="45" width="892" height="1446" rx="28" fill="url(#bg)"/>
+
+  <!-- Decorative top-right arc -->
+  <path d="M790 45H958V250C870 218 817 150 790 45Z" fill="#D5F1EE" opacity=".9"/>
+
+  <!-- Heading -->
+  <g font-family="Inter, Arial, sans-serif" fill="#075C59" font-weight="800">
+    <text x="141" y="142" font-size="52">What kind of project</text>
+    <text x="141" y="202" font-size="52">are you creating?</text>
+  </g>
+
+  <!-- STARTUP -->
+  <g font-family="Inter, Arial, sans-serif">
+    <circle cx="209" cy="380" r="66" fill="#CDEFEA"/>
+    <!-- rocket -->
+    <g transform="translate(209 380) rotate(-43)" fill="none" stroke="#109A91" stroke-width="8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M-4 22C0 1 15-18 40-32C43-5 34 14 10 28Z"/>
+      <circle cx="22" cy="-9" r="7"/>
+      <path d="M-7 13L-32 19L-21-5"/>
+      <path d="M4 29L-1 52L20 36"/>
+      <path d="M-17 34C-27 39-34 47-38 57"/>
+    </g>
+    <text x="320" y="370" font-size="31" font-weight="800" fill="#075C59">Startup Idea</text>
+    <text x="320" y="410" font-size="25" fill="#56808A">Turn your idea into a real product</text>
+    <text x="320" y="445" font-size="25" fill="#56808A">or business.</text>
+  </g>
+
+  <!-- WEBSITE / APP / PRODUCT -->
+  <g font-family="Inter, Arial, sans-serif">
+    <circle cx="209" cy="575" r="66" fill="#CDEFEA"/>
+    <!-- code icon -->
+    <g transform="translate(209 575)" fill="none" stroke="#109A91" stroke-width="9" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M-17-30L-45 0L-17 30"/>
+      <path d="M17-30L45 0L17 30"/>
+      <path d="M7-42L-7 42"/>
+    </g>
+    <text x="320" y="565" font-size="31" font-weight="800" fill="#075C59">Website / App / Product</text>
+    <text x="320" y="605" font-size="25" fill="#56808A">Build something useful, creative</text>
+    <text x="320" y="640" font-size="25" fill="#56808A">or innovative.</text>
+  </g>
+
+  <!-- COLLEGE EVENT -->
+  <g font-family="Inter, Arial, sans-serif">
+    <circle cx="209" cy="770" r="66" fill="#CDEFEA"/>
+    <!-- calendar -->
+    <g transform="translate(209 770)" fill="none" stroke="#109A91" stroke-width="8" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="-37" y="-30" width="74" height="68" rx="7"/>
+      <path d="M-37-7H37"/>
+      <path d="M-20-43V-21M20-43V-21"/>
+      <path d="M-18 11H-10M0 11H8M18 11H26M-18 27H-10M0 27H8"/>
+      <path d="M0 4L5 13L15 14L7 20L9 30L0 25L-9 30L-7 20L-15 14L-5 13Z" fill="#109A91" stroke="none"/>
+    </g>
+    <text x="320" y="760" font-size="31" font-weight="800" fill="#075C59">College Event</text>
+    <text x="320" y="800" font-size="25" fill="#56808A">Grow your event into a bigger</text>
+    <text x="320" y="835" font-size="25" fill="#56808A">socially helpful initiative.</text>
+  </g>
+
+  <!-- Handwritten statement -->
+  <g fill="#079D91" font-family="cursive, 'Segoe Print', 'Comic Sans MS', sans-serif" font-style="italic" font-weight="700">
+    <text x="150" y="970" font-size="48" transform="rotate(-6 150 970)">Small ideas</text>
+    <text x="155" y="1020" font-size="48" transform="rotate(-6 155 1020)">can create</text>
+    <text x="160" y="1070" font-size="48" transform="rotate(-6 160 1070)">big change</text>
+  </g>
+  <path d="M168 1095C230 1112 335 1095 425 1065" fill="none" stroke="#079D91" stroke-width="7" stroke-linecap="round"/>
+
+  <!-- Sun -->
+  <circle cx="777" cy="1015" r="63" fill="#A9E1DC"/>
+
+  <!-- Landscape -->
+  <g clip-path="url(#card)">
+    <!-- cloud bank -->
+    <path d="M40 1290
+             C72 1254 115 1254 145 1282
+             C166 1248 222 1244 249 1280
+             C281 1250 337 1264 347 1303
+             C382 1278 438 1288 456 1325
+             C495 1294 548 1308 565 1343
+             C602 1304 668 1305 693 1348
+             C728 1312 790 1324 806 1362
+             C842 1334 901 1342 940 1380
+             L960 1495L40 1495Z"
+          fill="#F7FFFD" opacity=".95"/>
+
+    <!-- distant mountains -->
+    <path d="M40 1491L153 1398L228 1437L317 1350L410 1431L493 1365L580 1430L667 1368L757 1432L842 1380L960 1450V1530H40Z"
+          fill="url(#farMountain)"/>
+
+    <!-- middle mountain -->
+    <path d="M40 1530L174 1450L257 1378L335 1425L426 1306L520 1405L605 1450L688 1395L793 1460L875 1410L960 1470V1540H40Z"
+          fill="url(#midMountain)"/>
+
+    <!-- main mountain -->
+    <path d="M40 1530L176 1460L280 1398L371 1300L452 1170L531 1308L599 1376L673 1422L758 1505L845 1470L960 1530V1540H40Z"
+          fill="url(#frontMountain)"/>
+
+    <!-- main mountain light face -->
+    <path d="M452 1170L531 1308L599 1376L530 1346L479 1288L423 1342L370 1300Z"
+          fill="#8ED8D2"/>
+
+    <!-- main mountain shadow -->
+    <path d="M371 1300L423 1342L479 1288L530 1346L467 1374L382 1440L280 1398Z"
+          fill="#3AA9A1" opacity=".75"/>
+
+    <!-- foreground -->
+    <path d="M40 1490C155 1454 238 1470 322 1510C411 1552 480 1514 565 1482C660 1447 735 1468 820 1500C877 1520 921 1517 960 1502V1540H40Z"
+          fill="#299F96" opacity=".72"/>
+
+    <!-- flag -->
+    <path d="M452 1175V1117" fill="none" stroke="#126E6A" stroke-width="7" stroke-linecap="round"/>
+    <path d="M455 1118L514 1133L455 1150Z" fill="#079D91"/>
+  </g>
+</svg>

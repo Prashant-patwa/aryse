@@ -5,6 +5,8 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import ExploreCampaigns from "./pages/ExploreCampaigns";
 import About from "./pages/About";
+import Profile from "./pages/Profile";
+import Logout from "./pages/Logout";
 
 
 export default function App() {
@@ -14,8 +16,10 @@ export default function App() {
       <Route path="/" element={<Home />} />
       <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<Signup />} />
-      <Route path="/explore-campaigns" element={<ExploreCampaigns />} />
+      <Route path="/campaigns" element={<ExploreCampaigns />} />
       <Route path="/about" element={<About />} />
+      <Route path="/profile" element={<Profile />} />
+      <Route path="/logout" element={<Logout />} />
     </Routes>
   )
 }

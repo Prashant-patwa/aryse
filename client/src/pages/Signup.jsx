@@ -14,27 +14,48 @@ export default function Signup() {
         setFormData((prev) => ({ ...prev, [name]: value }));
     }
 
-    const handleSubmit = (event) => {
-        event.preventDefault(); 
-        console.log("Form Submitted Data:", formData);
+    const handleSubmit = async (event) => {
+        event.preventDefault();
+
+        try {
+            // fetch(url, configuration-Object)
+            const response = await fetch("http://localhost:8080/api/signup", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json", 
+                },
+                body: JSON.stringify(formData)  
+            })
+
+            const data = await response.json();
+            console.log(data);
+
+        } catch (e) {
+            console.log(e);
+        }
+
     };
 
     return (
         <>
-            <h1>Signup Page</h1>
+            <form
+                onSubmit={handleSubmit}
+                className="flex flex-col border-2 border-black"
+            >
 
-            <form onSubmit={handleSubmit}>
+                <label htmlFor="username">Username</label>
+                <input type="text" id="username" onChange={handleChange} name="username" value={formData.username} autoComplete="username" />
 
-                <label htmlFor="username">Username: </label>
-                <input type="text" id="username" onChange={handleChange} name="username" value={formData.username} />
-
-                <label htmlFor="email">Email: </label>
+                <label htmlFor="email">Email</label>
                 <input type="email" id="email" onChange={handleChange} name="email" value={formData.email} />
 
-                <label htmlFor="password">Password: </label>
-                <input type="password" id="password" onChange={handleChange} name="password" value={formData.password} />
+                <label htmlFor="password">Password</label>
+                <input type="password" id="password" onChange={handleChange} name="password" value={formData.password} autoComplete="new-password" />
 
-                <button type="submit">Submit</button>
+                <input type="checkbox" id="terms" />
+                <label htmlFor="terms">I accept terms & conditions</label>
+
+                <button type="submit">Create Account</button>
 
             </form>
 

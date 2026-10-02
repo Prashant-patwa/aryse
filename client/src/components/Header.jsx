@@ -3,19 +3,19 @@ import NavButton from "./NavButton"
 
 export default function Header() {
   return (
-    <header className="w-full border-2 border-teal-700 h-16 p-2 bg-teal-50">
+    <header className="w-full border-2 border-teal-700 h-16 py-3  px-2 bg-teal-50">
 
-      <div className="flex justify-around items-end" >
+      <div className="flex justify-around items-end " >
         <AryseLogo className="self-end" />
 
         <div className="flex gap-4">
           <NavButton path="/" btnName="Home" variant="nav" />
-          <NavButton path="/explore-campaigns" btnName="Explore Projects" variant="nav" />
+          <NavButton path="/campaigns" btnName="Explore Projects" variant="nav" />
           <NavButton path="/about" btnName="How It Works" variant="nav" />
         </div>
 
         <div className="flex gap-4">
-          <NavButton path="/signin" btnName="Sign In" variant="signin" />
+          <NavButton path="/login" btnName="Sign In" variant="signin" />
           <NavButton path="/signup" btnName="Create Account" variant="createAccount" />
         </div>
       </div>
