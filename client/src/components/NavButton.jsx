@@ -1,33 +1,30 @@
-import { Link } from "react-router"
+import { Link } from "react-router";
 
-export default function NavButton({path, btnName, variant = "nav"}) {
+export default function NavButton({ to, path, name, btnName, variant = "nav" }) {
+  // Support both 'to' and 'path' props for flexible routing, as well as 'name' / 'btnName'
+  const linkTarget = to || path || "#";
+  const label = name || btnName;
 
-    // Because content should determine the size of the nav links.
-    const styles = {
-  nav: " text-teal-600 font-semibold hover:text-teal-700",
+  const styles = {
+    nav:
+      "text-slate-600 hover:text-teal-600 font-medium text-sm py-1 border-b-2 border-transparent hover:border-teal-600 transition-all whitespace-nowrap",
 
-  signin:
-    "p-2 text-lg text-green-600 font-semibold hover:shadow-md",
+    signin:
+      "px-5 py-2 border border-teal-600 text-teal-600 hover:bg-teal-50/50 rounded-lg font-medium text-sm transition-colors whitespace-nowrap",
 
-  createAccount:
-    "pt-2 px-2 rounded-lg bg-teal-700 text-white font-semibold hover:bg-teal-800",
+    createAccount:
+      "px-5 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg font-medium text-sm transition-colors whitespace-nowrap shadow-sm",
 
-    link: "cursor-pointer text-gray-600",
+    link: "text-teal-100/80 hover:text-white text-sm transition-colors block py-1",
 
-    SMlink: "size-6 font-bold cursor-pointer text-gray-600"
-};
+    SMlink: "text-white/80 hover:text-white text-xl p-2 rounded-full hover:bg-teal-800/40 transition-colors inline-flex items-center justify-center"
+  };
 
+  const selectedStyle = styles[variant] || styles.nav;
 
-    // Select the correct style based on the variant prop, falling back to "nav" if unmatched
-    const selectedStyle = styles[variant] || styles.nav;
-
-    return (
-        <Link to={path} className={selectedStyle}>
-            {btnName}
-        </Link>
-    )
+  return (
+    <Link to={linkTarget} className={selectedStyle}>
+      {label}
+    </Link>
+  );
 }
-
-// react Link uses <a>, both <a> & <button> are interactive so don't overlap.
-// Link disguise as button for nav and btn for action
-
