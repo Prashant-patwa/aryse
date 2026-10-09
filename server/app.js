@@ -1,3 +1,4 @@
+
 import "dotenv/config";
 import express from "express";
 import cors from "cors";
@@ -6,23 +7,42 @@ import bcrypt from "bcrypt";
 import session from "express-session";
 
 const app = express();
-const PORT = 8080;
+const PORT = process.env.PORT || 8080;
 const isProduction = process.env.NODE_ENV === "production";
 
-// Database
+// Trust the hosting platform's reverse proxy in production.
+if (isProduction) {
+    app.set("trust proxy", 1);
+}
+
+// ---------------- DATABASE ----------------
+
 const connection = mysql.createPool({
     host: process.env.DB_HOST || "localhost",
     port: Number(process.env.DB_PORT || 3306),
     user: process.env.DB_USER || "aryse_user",
     password: process.env.DB_PASSWORD,
-    database: "aryse",
+    database: process.env.DB_NAME || "aryse",
     waitForConnections: true,
     connectionLimit: 10
 });
 
-// Middleware
+// ---------------- MIDDLEWARE ----------------
+
+const allowedOrigins = [
+    "http://localhost:5173",
+    "https://crowdfunding-seven-green.vercel.app"
+];
+
 app.use(cors({
-    origin: "http://localhost:5173",
+    origin(origin, callback) {
+        // Allow requests without an Origin header, such as local tools.
+        if (!origin || allowedOrigins.includes(origin)) {
+            return callback(null, true);
+        }
+
+        return callback(new Error("Origin not allowed by CORS."));
+    },
     credentials: true
 }));
 
@@ -36,7 +56,7 @@ app.use(session({
     cookie: {
         httpOnly: true,
         secure: isProduction,
-        sameSite: "lax",
+        sameSite: isProduction ? "none" : "lax",
         maxAge: 7 * 24 * 60 * 60 * 1000
     }
 }));
@@ -118,6 +138,7 @@ app.post("/api/login", async (req, res) => {
         }
 
         const user = users[0];
+
         const passwordMatch = await bcrypt.compare(
             password,
             user.password
@@ -129,7 +150,6 @@ app.post("/api/login", async (req, res) => {
             });
         }
 
-        // Generate a fresh session ID after authentication.
         req.session.regenerate((error) => {
             if (error) {
                 console.error("Session regeneration error:", error);
@@ -139,17 +159,15 @@ app.post("/api/login", async (req, res) => {
                 });
             }
 
-            // Never store the password or password hash in the session.
             req.session.user = {
                 id: user.id,
                 username: user.username,
                 email: user.email
             };
 
-            // Save before sending the successful login response.
-            req.session.save((error) => {
-                if (error) {
-                    console.error("Session save error:", error);
+            req.session.save((saveError) => {
+                if (saveError) {
+                    console.error("Session save error:", saveError);
 
                     return res.status(500).json({
                         message: "Could not save your session."
@@ -173,15 +191,14 @@ app.post("/api/login", async (req, res) => {
 
 // ---------------- CHECK SESSION ----------------
 
-// Useful for debugging during development.
 app.get("/api/session", (req, res) => {
-    res.status(200).json({
+    return res.status(200).json({
         loggedIn: Boolean(req.session.user),
         user: req.session.user || null
     });
 });
 
-// ---------------- CHECK LOGIN ----------------
+// ---------------- CHECK PROFILE ----------------
 
 app.get("/api/profile", (req, res) => {
     if (!req.session.user) {
@@ -212,7 +229,7 @@ app.post("/api/logout", (req, res) => {
             path: "/",
             httpOnly: true,
             secure: isProduction,
-            sameSite: "lax"
+            sameSite: isProduction ? "none" : "lax"
         });
 
         return res.status(200).json({
@@ -223,10 +240,7 @@ app.post("/api/logout", (req, res) => {
 
 // ---------------- CREATE PROJECT ----------------
 
-// ---------------- CREATE PROJECT ----------------
-
 app.post("/api/projects", async (req, res) => {
-    // Only authenticated users can create projects.
     if (!req.session.user) {
         return res.status(401).json({
             message: "Please sign in to create a project."
@@ -290,12 +304,15 @@ app.post("/api/projects", async (req, res) => {
         story_content
     ];
 
+    const duration = Number(duration_months);
+    const goal = Number(goal_amount);
+
     if (
         textFields.some(value => typeof value !== "string") ||
-        !Number.isSafeInteger(duration_months) ||
-        duration_months < 1 ||
-        !Number.isFinite(Number(goal_amount)) ||
-        Number(goal_amount) <= 0 ||
+        !Number.isSafeInteger(duration) ||
+        duration < 1 ||
+        !Number.isFinite(goal) ||
+        goal <= 0 ||
         !/^\d{4}-\d{2}-\d{2}$/.test(start_date) ||
         (banner_image != null && typeof banner_image !== "string") ||
         (story_image != null && typeof story_image !== "string") ||
@@ -324,8 +341,6 @@ app.post("/api/projects", async (req, res) => {
         });
     }
 
-    // These details come from the authenticated session,
-    // not from values submitted by the browser.
     const userId = req.session.user.id;
     const creatorName = req.session.user.username;
     const creatorEmail = req.session.user.email;
@@ -350,8 +365,8 @@ app.post("/api/projects", async (req, res) => {
                 state.trim(),
                 banner_image?.trim() || "",
                 start_date,
-                duration_months,
-                Number(goal_amount),
+                duration,
+                goal,
                 funding_description.trim(),
                 story_title.trim(),
                 story_content.trim(),
@@ -413,7 +428,7 @@ app.get("/api/projects/:id", async (req, res) => {
 
     try {
         const [projects] = await connection.execute(
-            `SELECT * FROM projects WHERE id = ?`,
+            "SELECT * FROM projects WHERE id = ?",
             [id]
         );
 
@@ -435,18 +450,17 @@ app.get("/api/projects/:id", async (req, res) => {
     }
 });
 
+// ---------------- DEMO CONTRIBUTION ----------------
 
 app.post("/api/projects/:id/demo-payment", async (req, res) => {
     const projectId = Number(req.params.id);
     const amount = Number(req.body.amount);
 
-    // Validate project ID and contribution amount.
     if (
         !Number.isSafeInteger(projectId) ||
         projectId <= 0 ||
         !Number.isFinite(amount) ||
         amount <= 0 ||
-        !Number.isSafeInteger(Math.round(amount * 100)) ||
         Math.round(amount * 100) !== amount * 100
     ) {
         return res.status(400).json({
@@ -460,7 +474,6 @@ app.post("/api/projects/:id/demo-payment", async (req, res) => {
         db = await connection.getConnection();
         await db.beginTransaction();
 
-        // Check that the project exists and lock its row.
         const [projects] = await db.execute(
             "SELECT id FROM projects WHERE id = ? FOR UPDATE",
             [projectId]
@@ -474,7 +487,7 @@ app.post("/api/projects/:id/demo-payment", async (req, res) => {
             });
         }
 
-        // Record the simulated contribution.
+        // This is a simulated contribution, not a real payment.
         await db.execute(
             `INSERT INTO contributions
                 (project_id, amount, payment_status)
@@ -482,7 +495,6 @@ app.post("/api/projects/:id/demo-payment", async (req, res) => {
             [projectId, amount.toFixed(2)]
         );
 
-        // Increase the amount raised.
         await db.execute(
             `UPDATE projects
              SET raised_amount = raised_amount + ?
@@ -518,7 +530,6 @@ app.post("/api/projects/:id/demo-payment", async (req, res) => {
         if (db) db.release();
     }
 });
-
 
 // ---------------- START SERVER ----------------
 
