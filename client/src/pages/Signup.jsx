@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Link, useNavigate } from "react-router";
 import AryseLogo from "../components/AryseLogo";
@@ -11,19 +10,28 @@ export default function Signup() {
     email: "",
     password: "",
   });
+
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
   };
 
-  const handleSubmit = async (event) => {
+  const handleSubmit = (event) => {
     event.preventDefault();
     setError("");
 
-    if (formData.password.length < 8) {
+    const username = formData.username.trim();
+    const email = formData.email.trim().toLowerCase();
+    const password = formData.password;
+
+    if (password.length < 8) {
       setError("Password must be at least 8 characters long.");
       return;
     }
@@ -31,23 +39,42 @@ export default function Signup() {
     setLoading(true);
 
     try {
-      const response = await fetch("http://localhost:8080/api/signup", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify(formData),
-      });
+      const users = JSON.parse(
+        localStorage.getItem("aryse_users") || "[]"
+      );
 
-      const data = await response.json().catch(() => ({}));
-
-      if (!response.ok) {
-        setError(data.message || "Unable to create your account.");
+      if (!Array.isArray(users)) {
+        setError("Unable to create your account. Please try again.");
         return;
       }
 
-      navigate("/login");
-    } catch {
-      setError("Unable to connect to Aryse. Please try again.");
+      const userExists = users.some(
+        (user) =>
+          user.email?.toLowerCase() === email ||
+          user.username?.toLowerCase() === username.toLowerCase()
+      );
+
+      if (userExists) {
+        setError("This username or email is already registered.");
+        return;
+      }
+
+      const newUser = {
+        id: Date.now().toString(),
+        username,
+        email,
+        password,
+      };
+
+      localStorage.setItem(
+        "aryse_users",
+        JSON.stringify([...users, newUser])
+      );
+
+      navigate("/login", { replace: true });
+    } catch (error) {
+      console.error("Signup error:", error);
+      setError("Unable to create your account. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -74,6 +101,7 @@ export default function Signup() {
             <p className="font-semibold text-slate-800">
               Start with an idea. Build something meaningful.
             </p>
+
             <p className="mt-2 text-sm text-slate-500">
               Your next project could be the beginning of something bigger.
             </p>
@@ -86,15 +114,20 @@ export default function Signup() {
           <h1 className="text-2xl font-bold text-slate-800">
             Create your account
           </h1>
+
           <p className="mb-7 mt-2 text-sm text-slate-500">
             Join Aryse and bring your ideas one step closer to reality.
           </p>
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <div>
-              <label htmlFor="username" className="mb-2 block text-sm font-medium text-slate-700">
+              <label
+                htmlFor="username"
+                className="mb-2 block text-sm font-medium text-slate-700"
+              >
                 Username
               </label>
+
               <input
                 id="username"
                 name="username"
@@ -109,9 +142,13 @@ export default function Signup() {
             </div>
 
             <div>
-              <label htmlFor="email" className="mb-2 block text-sm font-medium text-slate-700">
+              <label
+                htmlFor="email"
+                className="mb-2 block text-sm font-medium text-slate-700"
+              >
                 Email address
               </label>
+
               <input
                 id="email"
                 name="email"
@@ -126,9 +163,13 @@ export default function Signup() {
             </div>
 
             <div>
-              <label htmlFor="password" className="mb-2 block text-sm font-medium text-slate-700">
+              <label
+                htmlFor="password"
+                className="mb-2 block text-sm font-medium text-slate-700"
+              >
                 Password
               </label>
+
               <input
                 id="password"
                 name="password"
@@ -141,13 +182,17 @@ export default function Signup() {
                 required
                 className="w-full rounded-lg border border-slate-200 px-4 py-3 text-sm outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-100"
               />
+
               <p className="mt-1 text-xs text-slate-400">
                 Use at least 8 characters.
               </p>
             </div>
 
             {error && (
-              <p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-700">
+              <p
+                role="alert"
+                className="rounded-lg bg-red-50 p-3 text-sm text-red-700"
+              >
                 {error}
               </p>
             )}
@@ -163,12 +208,18 @@ export default function Signup() {
 
           <p className="mt-7 text-center text-sm text-slate-500">
             Already have an account?{" "}
-            <Link to="/login" className="font-semibold text-teal-700 hover:underline">
+            <Link
+              to="/login"
+              className="font-semibold text-teal-700 hover:underline"
+            >
               Sign in
             </Link>
           </p>
 
-          <Link to="/" className="mt-5 text-center text-sm text-slate-500 hover:text-teal-700">
+          <Link
+            to="/"
+            className="mt-5 text-center text-sm text-slate-500 hover:text-teal-700"
+          >
             ← Back to Home
           </Link>
         </section>

@@ -1,241 +1,213 @@
-import { useEffect, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router";
-import { FaArrowLeft, FaCheckCircle, FaHeart } from "react-icons/fa";
-
-const API_URL = "http://localhost:8080/api/projects";
-
-const formatINR = (amount) =>
-  new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency: "INR",
-    maximumFractionDigits: 2,
-  }).format(Number(amount) || 0);
+import React, { useState, useEffect } from "react";
+import { useParams, useNavigate, Link } from "react-router";
+import projectData from "../data/projectsData.js";
 
 export default function DemoPayment() {
   const { id } = useParams();
   const navigate = useNavigate();
-
+  
   const [project, setProject] = useState(null);
-  const [amount, setAmount] = useState("500");
-  const [customAmount, setCustomAmount] = useState("");
-  const [useCustomAmount, setUseCustomAmount] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState("");
+  const [supportAmount, setSupportAmount] = useState("500");
+  const [supporterName, setSupporterName] = useState("");
+  const [supporterEmail, setSupporterEmail] = useState("");
+  const [selectedReward, setSelectedReward] = useState("None / Open Support");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    const fetchProject = async () => {
-      try {
-        const response = await fetch(`${API_URL}/${id}`);
-        const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(data.message || "Unable to load this project.");
-        }
-
-        setProject(data.project);
-      } catch (err) {
-        setError(err.message || "Unable to load this project.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchProject();
+    // 1. Check session local storage for newly created projects
+    const storedProjects = JSON.parse(localStorage.getItem("aryse_projects") || "[]");
+    const allProjects = [...storedProjects, ...projectData];
+    
+    // 2. Find target project
+    const found = allProjects.find((p) => String(p.id) === String(id));
+    if (found) {
+      setProject(found);
+    }
   }, [id]);
 
-  const selectedAmount = Number(
-    useCustomAmount ? customAmount : amount
-  );
+  const handleDemoContribute = (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
 
-  const handleSubmit = async (event) => {
-    event.preventDefault();
-    setError("");
+    const contribAmountNum = Number(supportAmount) || 0;
 
-    if (
-      !Number.isFinite(selectedAmount) ||
-      selectedAmount <= 0 ||
-      Math.round(selectedAmount * 100) !== selectedAmount * 100
-    ) {
-      setError("Enter a valid amount greater than ₹0, with up to 2 decimal places.");
-      return;
-    }
+    // Simulate short network delay for demo feel
+    setTimeout(() => {
+      if (project) {
+        // Update local session storage raised amount so it reflects immediately in Explore/Details
+        const storedProjects = JSON.parse(localStorage.getItem("aryse_projects") || "[]");
+        
+        // Check if project is in storedProjects or main projectData
+        const isStored = storedProjects.some((p) => String(p.id) === String(project.id));
+        
+        if (isStored) {
+          const updatedStored = storedProjects.map((p) => {
+            if (String(p.id) === String(project.id)) {
+              const newRaised = (p.amountRaised || 0) + contribAmountNum;
+              const goal = p.fundingGoal || 1000;
+              return {
+                ...p,
+                amountRaised: newRaised,
+                progress: Math.min(Math.round((newRaised / goal) * 100), 100)
+              };
+            }
+            return p;
+          });
+          localStorage.setItem("aryse_projects", JSON.stringify(updatedStored));
+        } else {
+          // If it's a default static project, store an override or update copy in localStorage
+          const existingOverrides = JSON.parse(localStorage.getItem("aryse_project_overrides") || "{}");
+          const currentRaised = existingOverrides[project.id]?.amountRaised ?? (project.amountRaised || 0);
+          const newRaised = currentRaised + contribAmountNum;
+          const goal = project.fundingGoal || 1000;
 
-    setSubmitting(true);
-
-    try {
-      const response = await fetch(`${API_URL}/${id}/demo-payment`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          amount: selectedAmount,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "Demo contribution failed.");
+          existingOverrides[project.id] = {
+            amountRaised: newRaised,
+            progress: Math.min(Math.round((newRaised / goal) * 100), 100)
+          };
+          localStorage.setItem("aryse_project_overrides", JSON.stringify(existingOverrides));
+        }
       }
 
-      navigate(`/projects/${id}/contribution-success`, {
-        state: {
-          amount: data.amount,
-          raisedAmount: data.raisedAmount,
-          projectTitle: project.title,
-        },
-      });
-    } catch (err) {
-      setError(err.message || "Something went wrong. Please try again.");
-    } finally {
-      setSubmitting(false);
-    }
+      setIsSubmitting(false);
+      // Navigate to success confirmation page or back with success state
+      navigate(`/contribution-success`, { state: { projectTitle: project?.title, amount: supportAmount } });
+    }, 1000);
   };
-
-  if (loading) {
-    return (
-      <div className="min-h-[60vh] flex items-center justify-center">
-        <p className="text-gray-600">Loading project...</p>
-      </div>
-    );
-  }
 
   if (!project) {
     return (
-      <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4 px-6">
-        <p className="text-gray-700">
-          {error || "Project not found."}
-        </p>
-        <Link to="/campaigns" className="text-teal-700 underline">
-          Explore projects
-        </Link>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="bg-white p-8 rounded-xl border border-gray-100 shadow-sm text-center max-w-md">
+          <h2 className="text-lg font-bold text-gray-900 mb-2">Project Not Found</h2>
+          <p className="text-sm text-gray-600 mb-4">Unable to locate the project for contribution.</p>
+          <Link to="/explore" className="text-teal-600 hover:underline text-sm font-medium">Back to Explore</Link>
+        </div>
       </div>
     );
   }
 
   return (
-    <main className="bg-gray-50 py-12 px-5">
-      <div className="max-w-2xl mx-auto">
-        <Link
-          to={`/projects/${id}`}
-          className="inline-flex items-center gap-2 text-gray-600 hover:text-teal-700 mb-8"
-        >
-          <FaArrowLeft />
-          Back to project
-        </Link>
+    <div className="min-h-screen bg-gray-50 py-10 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-2xl mx-auto bg-white rounded-xl border border-gray-100 shadow-sm p-6 sm:p-10">
+        
+        {/* Header */}
+        <div className="text-center mb-8">
 
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 md:p-9">
-          <div className="text-center mb-8">
-            <div className="w-14 h-14 rounded-full bg-teal-50 text-teal-700 flex items-center justify-center mx-auto mb-4">
-              <FaHeart size={23} />
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mt-3">
+            Support: {project.title}
+          </h1>
+          <p className="text-sm text-gray-600 mt-1">
+            Aryse charges <span className="font-semibold text-teal-600">0% commission</span>. 100% of your voluntary support goes directly to the student creator.
+          </p>
+        </div>
+
+
+
+        <form onSubmit={handleDemoContribute} className="space-y-6">
+          
+          {/* Support Amount */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Voluntary Support Amount (₹) *
+            </label>
+            <div className="relative rounded-md shadow-sm">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-500 font-semibold">
+                ₹
+              </div>
+              <input
+                type="number"
+                required
+                min="1"
+                value={supportAmount}
+                onChange={(e) => setSupportAmount(e.target.value)}
+                className="block w-full pl-8 pr-4 py-3 rounded-md border border-gray-300 focus:border-teal-500 focus:ring-teal-500 text-sm"
+                placeholder="500"
+              />
             </div>
-
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
-              Support this project
-            </h1>
-
-            <p className="text-gray-600 mt-2">
-              Your support can help bring an idea to life.
-            </p>
-          </div>
-
-          <div className="bg-gray-50 rounded-xl p-4 mb-7">
-            <p className="text-sm text-gray-500 mb-1">Project</p>
-            <h2 className="font-semibold text-gray-900">
-              {project.title}
-            </h2>
-            <p className="text-sm text-gray-600 mt-2">
-              Funding goal: {formatINR(project.goal_amount)}
-            </p>
-          </div>
-
-          <form onSubmit={handleSubmit}>
-            <h3 className="font-semibold text-gray-900 mb-4">
-              Choose a contribution amount
-            </h3>
-
-            <div className="grid grid-cols-3 gap-3 mb-4">
-              {["100", "500", "1000"].map((value) => (
+            <div className="flex gap-2 mt-2">
+              {[100, 500, 1000, 2500].map((amt) => (
                 <button
-                  key={value}
                   type="button"
-                  onClick={() => {
-                    setAmount(value);
-                    setUseCustomAmount(false);
-                  }}
-                  className={`border rounded-lg py-3 font-semibold transition ${
-                    !useCustomAmount && amount === value
-                      ? "border-teal-700 bg-teal-50 text-teal-800"
-                      : "border-gray-300 text-gray-700"
+                  key={amt}
+                  onClick={() => setSupportAmount(String(amt))}
+                  className={`text-xs px-3 py-1.5 rounded border transition-colors ${
+                    supportAmount === String(amt)
+                      ? "bg-teal-600 text-white border-teal-600"
+                      : "bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100"
                   }`}
                 >
-                  ₹{Number(value).toLocaleString("en-IN")}
+                  ₹{amt}
                 </button>
               ))}
             </div>
+          </div>
 
-            <button
-              type="button"
-              onClick={() => setUseCustomAmount(true)}
-              className={`w-full border rounded-lg py-3 mb-4 font-medium ${
-                useCustomAmount
-                  ? "border-teal-700 bg-teal-50 text-teal-800"
-                  : "border-gray-300 text-gray-700"
-              }`}
-            >
-              Enter a custom amount
-            </button>
-
-            {useCustomAmount && (
-              <div className="mb-5">
-                <label
-                  htmlFor="customAmount"
-                  className="block text-sm font-medium text-gray-700 mb-2"
-                >
-                  Custom amount (₹)
-                </label>
-
-                <input
-                  id="customAmount"
-                  type="number"
-                  min="0.01"
-                  step="0.01"
-                  value={customAmount}
-                  onChange={(event) => setCustomAmount(event.target.value)}
-                  placeholder="Enter amount"
-                  className="w-full border border-gray-300 rounded-lg px-4 py-3 outline-none focus:border-teal-700"
-                  required
-                />
-              </div>
-            )}
-
-            <div className="flex items-center justify-between border-t border-gray-200 pt-5 mt-5 mb-6">
-              <span className="text-gray-600">Your contribution</span>
-              <span className="text-2xl font-bold text-gray-900">
-                {formatINR(selectedAmount)}
-              </span>
+          {/* Supporter Details */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Your Name </label>
+              <input
+                type="text"
+                value={supporterName}
+                onChange={(e) => setSupporterName(e.target.value)}
+                placeholder="John Doe"
+                className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-teal-500 focus:ring-teal-500"
+              />
             </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Email / College ID </label>
+              <input
+                type="email"
+                value={supporterEmail}
+                onChange={(e) => setSupporterEmail(e.target.value)}
+                placeholder="example@gmail.com"
+                className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-teal-500 focus:ring-teal-500"
+              />
+            </div>
+          </div>
 
-            {error && (
-              <p className="bg-red-50 text-red-700 rounded-lg p-3 text-sm mb-4">
-                {error}
-              </p>
-            )}
+          {/* Reward Selection */}
+          {project.rewards && project.rewards.length > 0 && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Select Reward Tier</label>
+              <select
+                value={selectedReward}
+                onChange={(e) => setSelectedReward(e.target.value)}
+                className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm bg-white focus:border-teal-500 focus:ring-teal-500"
+              >
+                <option value="None / Open Support">None / Open Voluntary Support</option>
+                {project.rewards.map((r) => (
+                  <option key={r.id} value={r.title}>
+                    ₹{r.pledgeAmount} - {r.title}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
+          {/* Simulated Payment Method Box */}
+
+
+          {/* Action Button */}
+          <div className="pt-2">
             <button
               type="submit"
-              disabled={submitting}
-              className="w-full bg-teal-700 hover:bg-teal-800 disabled:opacity-60 text-white font-semibold rounded-lg py-3.5"
+              disabled={isSubmitting}
+              className="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 transition-colors disabled:opacity-50"
             >
-              {submitting ? "Processing demo..." : "Confirm demo contribution"}
+              {isSubmitting ? "Simulating Secure Transaction..." : `Complete Simulated Contribution of ₹${supportAmount}`}
             </button>
-          </form>
+          </div>
 
-          
-        </div>
+          <div className="text-center">
+            <Link to={`/projects/${project.id}`} className="text-xs text-teal-600 hover:underline">
+              Cancel and return to project
+            </Link>
+          </div>
+
+        </form>
       </div>
-    </main>
+    </div>
   );
 }

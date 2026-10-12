@@ -9,43 +9,60 @@ export default function Login() {
     email: "",
     password: "",
   });
+
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
   };
 
-  const handleSubmit = async (event) => {
+  const handleSubmit = (event) => {
     event.preventDefault();
     setError("");
     setLoading(true);
 
     try {
-      const response = await fetch("http://localhost:8080/api/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify(formData),
-      });
+      const users = JSON.parse(
+        localStorage.getItem("aryse_users") || "[]"
+      );
 
-      const data = await response.json().catch(() => ({}));
+      const matchedUser = users.find(
+        (user) =>
+          user.email.toLowerCase() === formData.email.trim().toLowerCase() &&
+          user.password === formData.password
+      );
 
-      if (!response.ok) {
-        setError(data.message || "Login failed. Check your email and password.");
+      if (!matchedUser) {
+        setError("Invalid email or password. Please try again.");
         return;
       }
 
+      const loggedInUser = {
+        username: matchedUser.username,
+        email: matchedUser.email,
+      };
+
+      localStorage.setItem(
+        "aryse_user",
+        JSON.stringify(loggedInUser)
+      );
+
       window.dispatchEvent(
         new CustomEvent("aryse-auth-changed", {
-          detail: data.user,
+          detail: loggedInUser,
         })
       );
 
-      navigate("/");
-    } catch {
-      setError("Unable to connect to Aryse. Please try again.");
+      navigate("/", { replace: true });
+    } catch (error) {
+      console.error("Login error:", error);
+      setError("Unable to sign in. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -72,9 +89,11 @@ export default function Login() {
             <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-lg bg-teal-100 text-xl text-teal-700">
               ↗
             </div>
+
             <p className="font-semibold text-slate-800">
               Ideas grow when people support them.
             </p>
+
             <p className="mt-2 text-sm text-slate-500">
               A place for student creativity, projects, and community impact.
             </p>
@@ -84,7 +103,10 @@ export default function Login() {
         </section>
 
         <section className="flex flex-col justify-center p-8 md:w-1/2 md:p-12">
-          <h1 className="text-2xl font-bold text-slate-800">Welcome back</h1>
+          <h1 className="text-2xl font-bold text-slate-800">
+            Welcome back
+          </h1>
+
           <p className="mb-7 mt-2 text-sm text-slate-500">
             Sign in to continue with Aryse.
           </p>
@@ -97,6 +119,7 @@ export default function Login() {
               >
                 Email address
               </label>
+
               <input
                 id="email"
                 name="email"
@@ -117,6 +140,7 @@ export default function Login() {
               >
                 Password
               </label>
+
               <input
                 id="password"
                 name="password"

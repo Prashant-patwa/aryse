@@ -1,393 +1,210 @@
-
-import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router";
-import {
-  FaSearch,
-  FaMapMarkerAlt,
-  FaTag,
-  FaRegFolderOpen,
-} from "react-icons/fa";
+import React, { useState, useEffect } from "react";
+import { Link } from "react-router";
+import  projectsData  from "../data/projectsData.js";
 
 export default function ExploreCampaigns() {
-  const navigate = useNavigate();
-
   const [projects, setProjects] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
 
-  // Fetch projects from the Express backend.
-  useEffect(() => {
-    const controller = new AbortController();
+  const categories = [
+    "All",
+    "Websites",
+    "Apps",
+    "Products",
+    "Startup Ideas",
+    "Community Impact",
+    "College Events"
+  ];
 
-    const fetchProjects = async () => {
-      try {
-        setLoading(true);
-        setError("");
+  // Load and combine static data with any newly created session projects from localStorage
+useEffect(() => {
+  try {
+    const storedProjects = JSON.parse(
+      localStorage.getItem("aryse_projects") || "[]"
+    );
 
-        const response = await fetch(
-          "http://localhost:8080/api/projects",
-          { signal: controller.signal }
-        );
-
-        if (!response.ok) {
-          throw new Error(`Server returned status ${response.status}`);
-        }
-
-        const data = await response.json();
-
-        // Support both [project, ...] and { projects: [...] }.
-        const projectList = Array.isArray(data)
-          ? data
-          : Array.isArray(data.projects)
-            ? data.projects
-            : null;
-
-        if (!projectList) {
-          throw new Error("The server returned an unexpected project format.");
-        }
-
-        setProjects(projectList);
-      } catch (err) {
-        if (err.name === "AbortError") return;
-
-        console.error("Failed to fetch projects:", err);
-        setError(
-          "Unable to load projects. Please check that your backend is running."
-        );
-      } finally {
-        if (!controller.signal.aborted) {
-          setLoading(false);
-        }
-      }
-    };
-
-    fetchProjects();
-
-    return () => controller.abort();
-  }, []);
-
-  // Build category filters from the projects returned by the API.
-  const categories = useMemo(() => {
-    const uniqueCategories = [
-      ...new Set(
-        projects
-          .map((project) => project.category)
-          .filter(Boolean)
+    setProjects([
+      ...storedProjects,
+      ...projectsData.filter(
+        (defaultProject) =>
+          !storedProjects.some(
+            (savedProject) => savedProject.id === defaultProject.id
+          )
       ),
-    ];
+    ]);
+  } catch (error) {
+    console.error("Could not load projects:", error);
+    setProjects([]);
+  }
+}, []);
 
-    return ["All", ...uniqueCategories];
-  }, [projects]);
+  // Filter projects based on search and category
+const filteredProjects = projects.filter((project) => {
+  const title = project.title || "";
+  const description =
+    project.shortDescription || project.short_description || "";
+  const city = project.city || "";
 
-  // Search by title, short description, category, and location.
-  const filteredProjects = useMemo(() => {
-    const query = searchQuery.trim().toLowerCase();
+  const search = searchTerm.toLowerCase();
 
-    return projects.filter((project) => {
-      const searchableText = [
-        project.title,
-        project.short_description,
-        project.description,
-        project.category,
-        project.city,
-        project.state,
-      ]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase();
+  const matchesSearch =
+    title.toLowerCase().includes(search) ||
+    description.toLowerCase().includes(search) ||
+    city.toLowerCase().includes(search);
 
-      const matchesSearch = searchableText.includes(query);
+  const matchesCategory =
+    selectedCategory === "All" ||
+    project.category === selectedCategory;
 
-      const matchesCategory =
-        selectedCategory === "All" ||
-        project.category === selectedCategory;
-
-      return matchesSearch && matchesCategory;
-    });
-  }, [projects, searchQuery, selectedCategory]);
-
-  const formatCurrency = (amount) => {
-    const value = Number(amount);
-
-    return new Intl.NumberFormat("en-IN", {
-      style: "currency",
-      currency: "INR",
-      maximumFractionDigits: 0,
-    }).format(Number.isFinite(value) ? value : 0);
-  };
+  return matchesSearch && matchesCategory;
+});
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800">
-      <main className="mx-auto w-full max-w-7xl px-6 py-12">
-        {/* Page heading */}
-        <section className="mx-auto mb-10 max-w-2xl text-center">
-          <p className="mb-3 text-sm font-semibold uppercase tracking-widest text-[#0F8F83]">
-            Discover · Support · Grow
-          </p>
-
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900 md:text-4xl">
-            Explore Student Projects
+    <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto">
+        
+        {/* Header Section */}
+        <div className="text-center mb-10">
+          <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-900 tracking-tight">
+            Explore Student Projects & Community Events
           </h1>
-
-          <p className="mt-3 text-base leading-7 text-slate-600">
-            Discover student ideas, creative projects, startup concepts,
-            and initiatives making a difference.
+          <p className="mt-3 max-w-2xl mx-auto text-base text-gray-600">
+            Support student innovators with voluntary funding, skills, equipment, or mentorship. <span className="text-teal-600 font-semibold">0% commission platform.</span>
           </p>
-        </section>
+        </div>
 
-        {/* Search and category filters */}
-        <section className="mb-10 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm md:p-6">
-          <div className="flex flex-col gap-5">
-            <div className="relative w-full">
-              <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-sm text-slate-400" />
-
-              <input
-                type="search"
-                value={searchQuery}
-                onChange={(event) => setSearchQuery(event.target.value)}
-                placeholder="Search projects by title, keyword, or location..."
-                aria-label="Search projects"
-                className="w-full rounded-lg border border-slate-200 bg-slate-50 py-3 pl-11 pr-4 text-sm outline-none focus:border-[#0F8F83] focus:bg-white focus:ring-2 focus:ring-teal-100"
-              />
-            </div>
-
-            <div>
-              <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                Browse by category
-              </p>
-
-              <div className="flex flex-wrap gap-2">
-                {categories.map((category) => {
-                  const selected = selectedCategory === category;
-
-                  return (
-                    <button
-                      key={category}
-                      type="button"
-                      onClick={() => setSelectedCategory(category)}
-                      aria-pressed={selected}
-                      className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
-                        selected
-                          ? "bg-[#0F8F83] text-white"
-                          : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                      }`}
-                    >
-                      {category}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Loading state */}
-        {loading && (
-          <div className="rounded-2xl border border-slate-200 bg-white py-20 text-center">
-            <div
-              className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-4 border-[#0F8F83] border-t-transparent"
-              role="status"
-              aria-label="Loading projects"
+        {/* Search & Filter Controls */}
+        <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-8">
+          
+          {/* Search Input */}
+          <div className="w-full md:w-1/3">
+            <input
+              type="text"
+              placeholder="Search projects, keywords, or city..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full rounded-md border border-gray-300 px-4 py-2 text-sm focus:border-teal-500 focus:ring-teal-500 bg-white shadow-sm"
             />
-
-            <p className="text-sm font-medium text-slate-600">
-              Loading projects...
-            </p>
           </div>
-        )}
 
-        {/* Error state */}
-        {!loading && error && (
-          <div className="mx-auto max-w-xl rounded-2xl border border-red-200 bg-red-50 p-8 text-center">
-            <h2 className="font-semibold text-red-800">
-              Could not load projects
-            </h2>
+          {/* Category Tabs */}
+          <div className="w-full md:w-auto overflow-x-auto pb-2 md:pb-0 flex gap-2">
+            {categories.map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setSelectedCategory(cat)}
+                className={`px-4 py-2 rounded-full text-xs sm:text-sm font-medium whitespace-nowrap transition-colors ${
+                  selectedCategory === cat
+                    ? "bg-teal-600 text-white shadow-sm"
+                    : "bg-white text-gray-700 border border-gray-200 hover:bg-gray-100"
+                }`}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
 
-            <p className="mt-2 text-sm text-red-700">{error}</p>
+        </div>
 
+        {/* Projects Grid */}
+        {filteredProjects.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredProjects.map((project) => {
+              const progressVal = project.fundingGoal > 0
+  ? Math.round(
+      ((project.amountRaised || 0) / project.fundingGoal) * 100
+    )
+  : 0;
+              
+              return (
+                <div
+                  key={project.id}
+                  className="bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow overflow-hidden flex flex-col justify-between"
+                >
+                  <div>
+                    {/* Banner Image */}
+                    <div className="h-48 w-full bg-gray-200 overflow-hidden relative">
+                      <img
+                        src={project.bannerImage}
+                        alt={project.title}
+                        className="w-full h-full object-cover"
+                      />
+                      <span className="absolute top-3 left-3 bg-teal-600 text-white text-xs font-semibold px-2.5 py-1 rounded-md shadow">
+                        {project.category}
+                      </span>
+                    </div>
+
+                    {/* Content */}
+                    <div className="p-5">
+                      <h3 className="text-lg font-bold text-gray-900 line-clamp-1 mb-2">
+                        {project.title}
+                      </h3>
+                      <p className="text-sm text-gray-600 line-clamp-2 mb-4">
+                        {project.shortDescription}
+                      </p>
+
+                      {/* Creator Info */}
+                      {project.creator && (
+                        <div className="flex items-center gap-3 mb-4">
+                          <img
+                            src={project.creator.avatar}
+                            alt={project.creator.name}
+                            className="w-8 h-8 rounded-full object-cover border border-gray-200"
+                          />
+                          <div>
+                            <p className="text-xs font-medium text-gray-900">{project.creator.name}</p>
+                            <p className="text-[11px] text-gray-500">{project.creator.role}</p>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Funding Progress Bar */}
+                      <div className="mb-4">
+                        <div className="flex justify-between text-xs font-medium text-gray-700 mb-1">
+                          <span>₹{project.amountRaised?.toLocaleString() || 0} raised</span>
+                          <span>Goal: ₹{project.fundingGoal?.toLocaleString()}</span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div
+                            className="bg-teal-600 h-2 rounded-full transition-all duration-300"
+                            style={{ width: `${Math.min(progressVal, 100)}%` }}
+                          ></div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Card Footer / Action Link */}
+                  <div className="px-5 pb-5 pt-0">
+                    <Link
+                      to={`/projects/${project.id}`}
+                      className="w-full block text-center bg-teal-50 text-teal-700 hover:bg-teal-600 hover:text-white font-medium py-2.5 px-4 rounded-lg text-sm transition-colors border border-teal-200 hover:border-teal-600"
+                    >
+                      View Project & Support
+                    </Link>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          /* Empty State */
+          <div className="text-center py-16 bg-white rounded-xl border border-gray-100 shadow-sm p-8">
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No projects found</h3>
+            <p className="text-sm text-gray-500 mb-6">
+              Try adjusting your search query or selecting a different category filter.
+            </p>
             <button
-              type="button"
-              onClick={() => window.location.reload()}
-              className="mt-5 rounded-lg bg-red-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-red-700"
+              onClick={() => { setSearchTerm(""); setSelectedCategory("All"); }}
+              className="px-4 py-2 bg-teal-600 text-white rounded-md text-sm font-medium hover:bg-teal-700 transition-colors"
             >
-              Try Again
+              Reset Filters
             </button>
           </div>
         )}
 
-        {/* No matching projects */}
-        {!loading && !error && filteredProjects.length === 0 && (
-          <div className="rounded-2xl border border-slate-200 bg-white px-6 py-16 text-center shadow-sm">
-            <FaRegFolderOpen className="mx-auto text-4xl text-slate-300" />
-
-            <h2 className="mt-5 text-xl font-bold text-slate-800">
-              {projects.length === 0
-                ? "No projects available yet"
-                : "No projects found"}
-            </h2>
-
-            <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-500">
-              {projects.length === 0
-                ? "Be the first to share an idea with the Aryse community."
-                : "Try another search term or select a different category."}
-            </p>
-
-            {projects.length > 0 ? (
-              <button
-                type="button"
-                onClick={() => {
-                  setSearchQuery("");
-                  setSelectedCategory("All");
-                }}
-                className="mt-6 rounded-lg border border-slate-200 px-5 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
-              >
-                Clear Filters
-              </button>
-            ) : (
-              <Link
-                to="/create-campaigns"
-                className="mt-6 inline-block rounded-lg bg-[#0F8F83] px-6 py-3 text-sm font-semibold text-white hover:bg-teal-800"
-              >
-                Create a Project
-              </Link>
-            )}
-          </div>
-        )}
-
-        {/* Project card grid */}
-        {!loading && !error && filteredProjects.length > 0 && (
-          <>
-            <div className="mb-5 flex items-center justify-between">
-              <p className="text-sm text-slate-500">
-                Showing{" "}
-                <span className="font-semibold text-slate-800">
-                  {filteredProjects.length}
-                </span>{" "}
-                {filteredProjects.length === 1 ? "project" : "projects"}
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 gap-7 md:grid-cols-2 lg:grid-cols-3">
-              {filteredProjects.map((project, index) => {
-                const id = project.id ?? project._id;
-                const title = project.title || "Untitled Project";
-                const description =
-                  project.short_description ||
-                  project.description ||
-                  "No project description provided.";
-
-                const imageUrl =
-                  project.banner_image || project.imageUrl || "";
-
-                const city = project.city || "";
-                const state = project.state || "";
-                const location = [city, state].filter(Boolean).join(", ");
-
-                return (
-                  <article
-                    key={id ?? `${title}-${index}`}
-                    className="flex flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition-shadow hover:shadow-md"
-                  >
-                    {/* Project banner */}
-                    <div className="relative h-48 overflow-hidden bg-slate-100">
-                      {imageUrl ? (
-                        <img
-                          src={imageUrl}
-                          alt={title}
-                          loading="lazy"
-                          className="h-full w-full object-cover"
-                          onError={(event) => {
-                            event.currentTarget.style.display = "none";
-                          }}
-                        />
-                      ) : (
-                        <div className="flex h-full items-center justify-center text-slate-400">
-                          <FaRegFolderOpen className="text-4xl" />
-                        </div>
-                      )}
-
-                      <span className="absolute left-4 top-4 rounded-md bg-white px-3 py-1.5 text-xs font-semibold text-[#0F8F83] shadow-sm">
-                        {project.category || "General"}
-                      </span>
-                    </div>
-
-                    {/* Project details */}
-                    <div className="flex flex-1 flex-col p-6">
-                      <h2 className="line-clamp-2 text-xl font-bold text-slate-900">
-                        {title}
-                      </h2>
-
-                      <p className="mt-3 line-clamp-3 text-sm leading-6 text-slate-600">
-                        {description}
-                      </p>
-
-                      {location && (
-                        <div className="mt-4 flex items-center gap-2 text-xs text-slate-500">
-                          <FaMapMarkerAlt className="shrink-0 text-slate-400" />
-                          <span>{location}</span>
-                        </div>
-                      )}
-
-                      <div className="mt-auto pt-6">
-                        <div className="mb-4 flex items-center justify-between gap-3 border-t border-slate-100 pt-4">
-                          <span className="text-xs font-medium uppercase tracking-wide text-slate-500">
-                            Funding goal
-                          </span>
-
-                          <span className="text-lg font-bold text-[#0F8F83]">
-                            {formatCurrency(project.goal_amount ?? project.targetAmount ?? project.goal ?? 0)}
-                          </span>
-                        </div>
-
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (id != null) {
-                              navigate(`/projects/${id}`);
-                            }
-                          }}
-                          disabled={id == null}
-                          className="block w-full rounded-lg bg-slate-100 py-3 text-center text-sm font-semibold text-slate-700 hover:bg-[#0F8F83] hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                          View Project
-                        </button>
-                      </div>
-                    </div>
-                  </article>
-                );
-              })}
-            </div>
-          </>
-        )}
-
-        {/* Bottom call to action */}
-        <section className="mt-16 rounded-2xl border border-slate-200 bg-white px-6 py-10 text-center shadow-sm md:px-10">
-          <div className="mx-auto max-w-2xl">
-            <p className="text-sm font-semibold text-[#0F8F83]">
-              HAVE AN IDEA?
-            </p>
-
-            <h2 className="mt-2 text-2xl font-bold text-slate-900">
-              Your project could be next.
-            </h2>
-
-            <p className="mt-3 text-sm leading-6 text-slate-600">
-              Share your project, startup idea, or community initiative
-              with the Aryse student community.
-            </p>
-
-            <Link
-              to="/create-campaigns"
-              className="mt-6 inline-block rounded-lg bg-[#0F8F83] px-7 py-3 text-sm font-semibold text-white hover:bg-teal-800"
-            >
-              Create a Project
-            </Link>
-          </div>
-        </section>
-      </main>
+      </div>
     </div>
   );
 }

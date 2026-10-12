@@ -6,57 +6,38 @@ import {
   FaRocket,
   FaMapMarkerAlt,
 } from "react-icons/fa";
-
-const API_URL = "http://localhost:8080/api/projects";
+import projectsData from "../data/projectsData.js";
 
 export default function Home() {
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [fetchError, setFetchError] = useState(false);
 
   useEffect(() => {
-    const controller = new AbortController();
+    try {
+      const storedProjects = JSON.parse(
+        localStorage.getItem("aryse_projects") || "[]"
+      );
 
-    async function fetchProjects() {
-      try {
-        setLoading(true);
-        setFetchError(false);
+      const savedProjects = Array.isArray(storedProjects)
+        ? storedProjects
+        : [];
 
-        const response = await fetch(API_URL, {
-          signal: controller.signal,
-        });
+      // Keep new projects and sample projects without duplicate IDs.
+      const projectMap = new Map();
 
-        if (!response.ok) {
-          throw new Error(`Request failed: ${response.status}`);
+      [...savedProjects, ...projectsData].forEach((project) => {
+        if (!projectMap.has(String(project.id))) {
+          projectMap.set(String(project.id), project);
         }
+      });
 
-        const data = await response.json();
-
-        // Backend response is { projects: [...] }
-        const projectList = Array.isArray(data)
-          ? data
-          : data.projects;
-
-        if (!Array.isArray(projectList)) {
-          throw new Error("Unexpected projects API response.");
-        }
-
-        setProjects(projectList);
-      } catch (error) {
-        if (error.name !== "AbortError") {
-          console.error("Error fetching projects:", error);
-          setFetchError(true);
-        }
-      } finally {
-        if (!controller.signal.aborted) {
-          setLoading(false);
-        }
-      }
+      setProjects(Array.from(projectMap.values()));
+    } catch (error) {
+      console.error("Could not load projects:", error);
+      setProjects(Array.isArray(projectsData) ? projectsData : []);
+    } finally {
+      setLoading(false);
     }
-
-    fetchProjects();
-
-    return () => controller.abort();
   }, []);
 
   const formatINR = (amount) =>
@@ -66,9 +47,20 @@ export default function Home() {
       maximumFractionDigits: 0,
     }).format(Number(amount) || 0);
 
-  // Use the same database field names as your backend.
+  // Support both the new camelCase fields and older sample-data fields.
+  const getBanner = (project) =>
+    project.bannerImage || project.banner_image || "";
+
+  const getDescription = (project) =>
+    project.shortDescription ||
+    project.short_description ||
+    "Discover the idea and learn what the student creator is building.";
+
+  const getGoal = (project) =>
+    project.fundingGoal ?? project.goal_amount ?? 0;
+
   const featuredProjects = projects.slice(0, 3);
-  const heroProject = projects[0];
+  const heroProject = projects[2];
 
   return (
     <div className="min-h-screen bg-white text-slate-800">
@@ -108,7 +100,7 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Right column: Real project preview */}
+          {/* Right column: Featured project preview */}
           <div className="mx-auto w-full max-w-lg">
             {loading ? (
               <div className="animate-pulse overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
@@ -123,9 +115,9 @@ export default function Home() {
                 className="block overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-shadow hover:shadow-md"
               >
                 <div className="h-64 overflow-hidden bg-slate-100">
-                  {heroProject.banner_image ? (
+                  {getBanner(heroProject) ? (
                     <img
-                      src={heroProject.banner_image}
+                      src={getBanner(heroProject)}
                       alt={heroProject.title || "Featured project"}
                       className="h-full w-full object-cover"
                       onError={(event) => {
@@ -141,7 +133,8 @@ export default function Home() {
 
                 <div className="p-6">
                   <span className="text-xs font-semibold uppercase tracking-wider text-[#0F8F83]">
-                    Featured Project · {heroProject.category || "Student Project"}
+                    Featured Project ·{" "}
+                    {heroProject.category || "Student Project"}
                   </span>
 
                   <h2 className="mt-2 text-2xl font-bold text-slate-900">
@@ -149,8 +142,7 @@ export default function Home() {
                   </h2>
 
                   <p className="mt-3 line-clamp-2 text-sm leading-relaxed text-slate-600">
-                    {heroProject.short_description ||
-                      "Discover the idea and learn what the student creator is building."}
+                    {getDescription(heroProject)}
                   </p>
 
                   <div className="mt-5 flex items-center justify-between gap-3 border-t border-slate-100 pt-4">
@@ -162,7 +154,7 @@ export default function Home() {
                     </span>
 
                     <span className="text-sm font-bold text-[#0F8F83]">
-                      {formatINR(heroProject.goal_amount)}
+                      {formatINR(getGoal(heroProject))}
                     </span>
                   </div>
                 </div>
@@ -188,12 +180,6 @@ export default function Home() {
                 >
                   Create a Project
                 </Link>
-
-                {fetchError && (
-                  <p className="mt-4 text-xs text-red-600">
-                    Projects couldn't be loaded. Check that your backend is running.
-                  </p>
-                )}
               </div>
             )}
           </div>
@@ -206,6 +192,7 @@ export default function Home() {
               <h2 className="text-3xl font-bold text-slate-900">
                 How Aryse Works
               </h2>
+
               <p className="mt-2 text-sm text-slate-500">
                 Three simple steps to bring student innovation to life.
               </p>
@@ -216,7 +203,11 @@ export default function Home() {
                 <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-teal-50 text-[#0F8F83]">
                   <FaLightbulb className="h-6 w-6" />
                 </div>
-                <h3 className="text-xl font-semibold">1. Share Your Idea</h3>
+
+                <h3 className="text-xl font-semibold">
+                  1. Share Your Idea
+                </h3>
+
                 <p className="mt-2 text-sm text-slate-600">
                   Showcase your website, app, startup idea, or community event.
                 </p>
@@ -226,7 +217,11 @@ export default function Home() {
                 <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-teal-50 text-[#0F8F83]">
                   <FaUsers className="h-6 w-6" />
                 </div>
-                <h3 className="text-xl font-semibold">2. Find Support</h3>
+
+                <h3 className="text-xl font-semibold">
+                  2. Find Support
+                </h3>
+
                 <p className="mt-2 text-sm text-slate-600">
                   Introduce your work to people who can encourage your idea.
                 </p>
@@ -236,7 +231,11 @@ export default function Home() {
                 <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-teal-50 text-[#0F8F83]">
                   <FaRocket className="h-6 w-6" />
                 </div>
-                <h3 className="text-xl font-semibold">3. Make an Impact</h3>
+
+                <h3 className="text-xl font-semibold">
+                  3. Make an Impact
+                </h3>
+
                 <p className="mt-2 text-sm text-slate-600">
                   Work towards turning your idea into something meaningful.
                 </p>
@@ -252,6 +251,7 @@ export default function Home() {
               <h2 className="text-3xl font-bold text-slate-900">
                 Featured Projects
               </h2>
+
               <p className="mt-1 text-sm text-slate-500">
                 Discover ideas shared by student creators.
               </p>
@@ -282,22 +282,6 @@ export default function Home() {
                 </div>
               ))}
             </div>
-          ) : fetchError ? (
-            <div className="rounded-xl border border-red-200 bg-red-50 p-8 text-center">
-              <h3 className="font-semibold text-red-800">
-                Unable to load projects
-              </h3>
-              <p className="mt-2 text-sm text-red-700">
-                Make sure your Express server is running and the projects API
-                is responding.
-              </p>
-              <button
-                onClick={() => window.location.reload()}
-                className="mt-4 rounded-lg bg-red-600 px-5 py-2.5 text-sm font-medium text-white"
-              >
-                Try Again
-              </button>
-            </div>
           ) : featuredProjects.length > 0 ? (
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
               {featuredProjects.map((project) => (
@@ -307,9 +291,9 @@ export default function Home() {
                   className="flex flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition-shadow hover:shadow-md"
                 >
                   <div className="h-44 overflow-hidden bg-slate-100">
-                    {project.banner_image ? (
+                    {getBanner(project) ? (
                       <img
-                        src={project.banner_image}
+                        src={getBanner(project)}
                         alt={project.title || "Project"}
                         className="h-full w-full object-cover"
                         onError={(event) => {
@@ -333,13 +317,16 @@ export default function Home() {
                     </h3>
 
                     <p className="mb-4 line-clamp-2 flex-grow text-sm text-slate-600">
-                      {project.short_description || "No description provided."}
+                      {getDescription(project)}
                     </p>
 
                     <div className="flex items-center justify-between gap-3 border-t border-slate-100 pt-4 text-sm">
-                      <span className="text-slate-500">Funding goal</span>
+                      <span className="text-slate-500">
+                        Funding goal
+                      </span>
+
                       <span className="font-semibold text-[#0F8F83]">
-                        {formatINR(project.goal_amount)}
+                        {formatINR(getGoal(project))}
                       </span>
                     </div>
                   </div>
@@ -351,9 +338,11 @@ export default function Home() {
               <h3 className="text-lg font-semibold text-slate-700">
                 No projects available yet
               </h3>
+
               <p className="mb-6 mt-1 text-sm text-slate-500">
                 Be the first student to publish a project on Aryse!
               </p>
+
               <Link
                 to="/create-campaigns"
                 className="inline-block rounded-lg bg-[#0F8F83] px-5 py-2.5 text-sm font-medium text-white hover:bg-[#0c7369]"
@@ -370,9 +359,12 @@ export default function Home() {
             <h2 className="text-3xl font-bold text-slate-900">
               Ready to bring your idea to life?
             </h2>
+
             <p className="mt-3 text-slate-600">
-              Share your project and take the first step towards making an impact.
+              Share your project and take the first step towards making an
+              impact.
             </p>
+
             <div className="mt-8">
               <Link
                 to="/create-campaigns"

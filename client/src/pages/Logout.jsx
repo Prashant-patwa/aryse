@@ -1,35 +1,19 @@
-
 import { useState } from "react";
 import { Link, useNavigate } from "react-router";
 
 export default function Logout() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
 
-  const handleLogout = async () => {
+  const handleLogout = () => {
     setLoading(true);
-    setError("");
 
-    try {
-      const response = await fetch("http://localhost:8080/api/logout", {
-        method: "POST",
-        credentials: "include",
-      });
+    // Remove login information stored in the browser.
+    localStorage.removeItem("aryse_user");
+    localStorage.removeItem("user");
 
-      const data = await response.json().catch(() => ({}));
-
-      if (!response.ok) {
-        setError(data.message || "Unable to sign out. Please try again.");
-        return;
-      }
-
-      navigate("/login", { replace: true });
-    } catch {
-      setError("Unable to connect to Aryse. Please try again.");
-    } finally {
-      setLoading(false);
-    }
+    // Keep Aryse project data intact.
+    navigate("/login", { replace: true });
   };
 
   return (
@@ -54,12 +38,6 @@ export default function Logout() {
           discover projects and share your ideas.
         </p>
 
-        {error && (
-          <p role="alert" className="mt-5 rounded-lg bg-red-50 p-3 text-sm text-red-700">
-            {error}
-          </p>
-        )}
-
         <button
           type="button"
           onClick={handleLogout}
@@ -78,7 +56,10 @@ export default function Logout() {
           Cancel
         </button>
 
-        <Link to="/" className="mt-6 inline-block text-sm text-slate-500 hover:text-teal-700">
+        <Link
+          to="/"
+          className="mt-6 inline-block text-sm text-slate-500 hover:text-teal-700"
+        >
           Back to Home
         </Link>
       </section>
