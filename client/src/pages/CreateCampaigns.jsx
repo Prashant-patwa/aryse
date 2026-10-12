@@ -37,10 +37,10 @@ export default function CreateCampaigns() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
 
     // Construct new project object matching shared frontend data structure
+
+
 
 const handleSubmit = (e) => {
   e.preventDefault();
@@ -86,7 +86,7 @@ const handleSubmit = (e) => {
     );
 
     if (!Array.isArray(savedProjects)) {
-      throw new Error("Saved project data is invalid.");
+      throw new Error("Invalid saved project data");
     }
 
     localStorage.setItem(
@@ -97,28 +97,14 @@ const handleSubmit = (e) => {
     setSubmittedMessage(true);
 
     setTimeout(() => {
-      navigate("/explore");
-    }, 1200);
+      navigate("/campaigns");
+    }, 1000);
   } catch (error) {
     console.error("Unable to save project:", error);
-    alert("Unable to save the project in this browser.");
+    alert("Unable to save the project. Please try again.");
   }
 };
 
-
-    // Add to local projects array (Temporary frontend session storage)
-    projectsData.unshift(newProject);
-
-    // Optional: Also sync to localStorage so it persists across refreshes during testing
-    const existingStored = JSON.parse(localStorage.getItem("aryse_projects") || "[]");
-    localStorage.setItem("aryse_projects", JSON.stringify([newProject, ...existingStored]));
-
-    setSubmittedMessage(true);
-
-    setTimeout(() => {
-      navigate("/");
-    }, 1500);
-  };
 
   return (
     <div className="min-h-screen bg-gray-50 py-10 px-4 sm:px-6 lg:px-8">

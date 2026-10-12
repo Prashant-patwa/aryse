@@ -18,26 +18,31 @@ export default function ExploreCampaigns() {
   ];
 
   // Load and combine static data with any newly created session projects from localStorage
+
 useEffect(() => {
   try {
     const storedProjects = JSON.parse(
       localStorage.getItem("aryse_projects") || "[]"
     );
 
-    setProjects([
+    const savedIds = new Set(
+      storedProjects.map((project) => String(project.id))
+    );
+
+    const combinedProjects = [
       ...storedProjects,
       ...projectsData.filter(
-        (defaultProject) =>
-          !storedProjects.some(
-            (savedProject) => savedProject.id === defaultProject.id
-          )
+        (project) => !savedIds.has(String(project.id))
       ),
-    ]);
+    ];
+
+    setProjects(combinedProjects);
   } catch (error) {
     console.error("Could not load projects:", error);
-    setProjects([]);
+    setProjects(projectsData);
   }
 }, []);
+
 
   // Filter projects based on search and category
 const filteredProjects = projects.filter((project) => {
